@@ -1,9 +1,13 @@
+# All comments in this file must be written in English only.
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
 import random
 import os
+
+#CONFIG
+FONT_NAME = 'Palatino Linotype'
 
 # Norwegian alphabet with extended letters
 letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ")
@@ -25,17 +29,49 @@ def generate_random_chart():
     ax.set_yticks(range(-5, 6))
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
 
-    # Draw axes with arrowheads
-    ax.axhline(0, color='black', linewidth=1)
-    ax.axvline(0, color='black', linewidth=1)
-    ax.annotate('', xy=(5.5, 0), xytext=(0, 0), arrowprops=dict(facecolor='black', width=1.5, headwidth=8))
-    ax.annotate('', xy=(0, 5.5), xytext=(0, 0), arrowprops=dict(facecolor='black', width=1.5, headwidth=8))
-    ax.text(5.4, -0.5, 'x', fontsize=12)
-    ax.text(-0.5, 5.4, 'y', fontsize=12)
+    # Hide tick marks
+    ax.tick_params(axis='both', which='both', length=0)
+
+    # Draw axes with arrowheads, both 1px thick
+    axis_linewidth = 1
+    ax.annotate(
+        '', xy=(5.5, 0), xytext=(-5.5, 0),
+        arrowprops=dict(arrowstyle='->', color='black', linewidth=axis_linewidth)
+    )
+    ax.annotate(
+        '', xy=(0, 5.5), xytext=(0, -5.5),
+        arrowprops=dict(arrowstyle='->', color='black', linewidth=axis_linewidth)
+    )
+
+    # Axis labels (large, italic, near axes)
+    ax.text(5.2, -0.2, 'x', fontsize=22, fontstyle='italic', ha='center', va='center')
+    ax.text(-0.2, 5.2, 'y', fontsize=22, fontstyle='italic', ha='center', va='center')
+
+    # Place coordinate labels along axes
+    for x in range(-5, 6):
+        if x != 0:
+            ax.text(x, 0.2, str(x), fontsize=14, ha='center', va='center', fontname=FONT_NAME)
+    for y in range(-5, 6):
+        if y != 0:
+            ax.text(0.2, y, str(y), fontsize=14, ha='center', va='center', fontname=FONT_NAME)
+    ax.text(0.2, 0.2, '0', fontsize=15, ha='center', va='center', fontname=FONT_NAME, fontweight='bold')
+
+    # Draw ticks near numbers along axes
+    tick_length = 0.18
+    for x in range(-5, 6):
+        if x != 0:
+            ax.plot([x, x], [-tick_length/2, tick_length/2], color='black', linewidth=1)
+    for y in range(-5, 6):
+        if y != 0:
+            ax.plot([-tick_length/2, tick_length/2], [y, y], color='black', linewidth=1)
 
     # Plot letters
     for letter, (x, y) in positions.items():
-        ax.text(x, y, letter, fontsize=14, ha='center', va='center', fontname='Palatino Linotype')
+        ax.text(x, y, letter, fontsize=24, ha='center', va='center', fontname=FONT_NAME, fontweight='bold')
+
+
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
 
     plt.tight_layout()
     chart_path = "chart.png"
@@ -68,6 +104,12 @@ root = tk.Tk()
 root.title("DEKART v1.2")
 root.resizable(False, False)
 
+def force_focus(event=None):
+    root.after(100, root.focus_force)
+
+root.after(200, root.focus_force)           # Focus on start
+root.bind("<FocusOut>", force_focus)        # Focus on lost
+
 window_width = 1300
 window_height = 900
 screen_width = root.winfo_screenwidth()
@@ -86,8 +128,29 @@ entry = tk.Entry(main_frame, font=('Palatino', 24), validate="key", validatecomm
 entry.pack(pady=10)
 entry.bind('<Return>', on_submit)
 
-submit_button = tk.Button(main_frame, text="OK", command=on_submit, font=('Palatino', 24))
-submit_button.pack(pady=5)
+def regenerate_chart():
+    global letter_positions, chart_path, photo
+    letter_positions, chart_path = generate_random_chart()
+    allowed_chars.clear()
+    allowed_chars.update(letter_positions.keys())
+    # Update the image
+    image = Image.open(chart_path)
+    orig_width, orig_height = image.size
+    image = image.resize((int(orig_width * 0.9), int(orig_height * 0.9)), Image.LANCZOS)
+    photo = ImageTk.PhotoImage(image)
+    image_label.configure(image=photo)
+    image_label.image = photo
+    output_var.set("")
+    entry.delete(0, tk.END)
+
+button_frame = tk.Frame(main_frame)
+button_frame.pack(pady=5)
+
+submit_button = tk.Button(button_frame, text="🆗", command=on_submit, font=('Palatino', 24))
+submit_button.pack(side=tk.LEFT, padx=(0, 10))
+
+regen_button = tk.Button(button_frame, text="🔄", command=regenerate_chart, font=('Palatino', 24))
+regen_button.pack(side=tk.LEFT)
 
 output_var = tk.StringVar()
 output_label = tk.Label(main_frame, textvariable=output_var, font=('Palatino', 34), width=14, height=20,
