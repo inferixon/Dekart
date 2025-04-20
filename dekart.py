@@ -8,6 +8,7 @@ import os
 
 #CONFIG
 FONT_NAME = 'Palatino Linotype'
+VERSION = '1.3.0'
 
 # Norwegian alphabet with extended letters
 letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ")
@@ -60,10 +61,10 @@ def generate_random_chart():
     tick_length = 0.18
     for x in range(-5, 6):
         if x != 0:
-            ax.plot([x, x], [-tick_length/2, tick_length/2], color='black', linewidth=1)
+            ax.plot([x, x], [-tick_length/4, tick_length/4], color='black', linewidth=1)
     for y in range(-5, 6):
         if y != 0:
-            ax.plot([-tick_length/2, tick_length/2], [y, y], color='black', linewidth=1)
+            ax.plot([-tick_length/4, tick_length/4], [y, y], color='black', linewidth=1)
 
     # Plot letters
     for letter, (x, y) in positions.items():
@@ -101,7 +102,7 @@ def validate_input(P):
     return all(char.upper() in allowed_chars or char == "" for char in P)
 
 root = tk.Tk()
-root.title("DEKART v1.2")
+root.title("DEKART v" + VERSION)
 root.resizable(False, False)
 
 def force_focus(event=None):
