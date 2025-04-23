@@ -1,19 +1,21 @@
 # All comments in this file must be written in English only.
-import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
-import matplotlib.pyplot as plt
+import sys
 import random
 import os
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPushButton,
+                                 QVBoxLayout, QHBoxLayout, QLineEdit, QMessageBox)
+from PySide6.QtGui import QPixmap, QFont
+from PySide6.QtCore import Qt
+import matplotlib.pyplot as plt
+from PIL import Image
 
-#CONFIG
 FONT_NAME = 'Palatino Linotype'
 VERSION = '1.3.0'
 
-# Norwegian alphabet with extended letters
 letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ")
 
-# Generate dynamic coordinates and chart
+# Generates a random chart with letters placed on a grid
+# Returns a dictionary of positions and the path to the saved chart image
 def generate_random_chart():
     grid_range = range(-5, 6)
     all_coords = [(x, y) for x in grid_range for y in grid_range if (x != 0 and y != 0)]
@@ -22,33 +24,23 @@ def generate_random_chart():
 
     positions = dict(zip(letters, selected_coords))
 
-    # Create plot
     fig, ax = plt.subplots(figsize=(10, 10), dpi=100)
     ax.set_xlim(-5.5, 5.5)
     ax.set_ylim(-5.5, 5.5)
     ax.set_xticks(range(-5, 6))
     ax.set_yticks(range(-5, 6))
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-
-    # Hide tick marks
     ax.tick_params(axis='both', which='both', length=0)
 
-    # Draw axes with arrowheads, both 1px thick
     axis_linewidth = 1
-    ax.annotate(
-        '', xy=(5.5, 0), xytext=(-5.5, 0),
-        arrowprops=dict(arrowstyle='->', color='black', linewidth=axis_linewidth)
-    )
-    ax.annotate(
-        '', xy=(0, 5.5), xytext=(0, -5.5),
-        arrowprops=dict(arrowstyle='->', color='black', linewidth=axis_linewidth)
-    )
+    ax.annotate('', xy=(5.5, 0), xytext=(-5.5, 0),
+                arrowprops=dict(arrowstyle='->', color='black', linewidth=axis_linewidth))
+    ax.annotate('', xy=(0, 5.5), xytext=(0, -5.5),
+                arrowprops=dict(arrowstyle='->', color='black', linewidth=axis_linewidth))
 
-    # Axis labels (large, italic, near axes)
     ax.text(5.2, -0.2, 'x', fontsize=22, fontstyle='italic', ha='center', va='center')
     ax.text(-0.2, 5.2, 'y', fontsize=22, fontstyle='italic', ha='center', va='center')
 
-    # Place coordinate labels along axes
     for x in range(-5, 6):
         if x != 0:
             ax.text(x, 0.2, str(x), fontsize=14, ha='center', va='center', fontname=FONT_NAME)
@@ -57,7 +49,6 @@ def generate_random_chart():
             ax.text(0.2, y, str(y), fontsize=14, ha='center', va='center', fontname=FONT_NAME)
     ax.text(0.2, 0.2, '0', fontsize=15, ha='center', va='center', fontname=FONT_NAME, fontweight='bold')
 
-    # Draw ticks near numbers along axes
     tick_length = 0.18
     for x in range(-5, 6):
         if x != 0:
@@ -66,109 +57,116 @@ def generate_random_chart():
         if y != 0:
             ax.plot([-tick_length/4, tick_length/4], [y, y], color='black', linewidth=1)
 
-    # Plot letters
     for letter, (x, y) in positions.items():
         ax.text(x, y, letter, fontsize=24, ha='center', va='center', fontname=FONT_NAME, fontweight='bold')
 
-
     ax.set_xticklabels([])
     ax.set_yticklabels([])
-
     plt.tight_layout()
     chart_path = "chart.png"
     plt.savefig(chart_path)
     plt.close()
     return positions, chart_path
 
-# Generate chart and get new positions
-global letter_positions
-letter_positions, chart_path = generate_random_chart()
+# Main application window class
+class DekartApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(f"DEKART v{VERSION}")
+        self.setFixedSize(1500, 900)  # increased by another 50px
+        self.setStyleSheet("background: #fff;")
 
-allowed_chars = set(letter_positions.keys())
+        self.letter_positions, self.chart_path = generate_random_chart()
+        self.allowed_chars = set(self.letter_positions.keys())
 
-def on_submit(event=None):
-    word = entry.get().upper()
-    if not all(char in letter_positions for char in word):
-        messagebox.showerror("Error", "Only Norwegian letters A–Z + Æ Ø Å are allowed")
-        return
-    coords = [f"{letter_positions[c][0]}, {letter_positions[c][1]}" for c in word]
-    result = "\n".join(coords)
-    output_var.set(result)
-    root.clipboard_clear()
-    root.clipboard_append(result)
-    entry.delete(0, tk.END)
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
 
-def validate_input(P):
-    return all(char.upper() in allowed_chars or char == "" for char in P)
+        main_layout = QHBoxLayout()
+        self.central_widget.setLayout(main_layout)
 
-root = tk.Tk()
-root.title("DEKART v" + VERSION)
-root.resizable(False, False)
+        # Left side
+        left_panel = QVBoxLayout()
+        self.entry = QLineEdit()
+        self.entry.setFont(QFont("Palatino", 24))
+        self.entry.returnPressed.connect(self.on_submit)
+        self.entry.setStyleSheet("background: #fff; color: #222; border-radius: 0; border: 1px solid #bbb; box-shadow: 0 2px 6px #eee, 0 1.5px 0 #fff inset;")
+        self.entry.setValidator(None)  # Remove any previous validators
+        self.entry.textChanged.connect(self.filter_norwegian_letters)
+        left_panel.addWidget(self.entry)
 
-def force_focus(event=None):
-    root.after(100, root.focus_force)
+        btn_row = QHBoxLayout()
+        submit_btn = QPushButton("🆗")
+        submit_btn.setFont(QFont("Palatino", 24))
+        submit_btn.clicked.connect(self.on_submit)
+        submit_btn.setStyleSheet("background: #f5f5f5; color: #222; border-radius: 0; border: 1px solid #bbb; min-width: 60px; min-height: 60px; box-shadow: 0 2px 6px #ddd, 0 1.5px 0 #fff inset;")
+        btn_row.addWidget(submit_btn)
 
-root.after(200, root.focus_force)           # Focus on start
-root.bind("<FocusOut>", force_focus)        # Focus on lost
+        regen_btn = QPushButton("🔄")
+        regen_btn.setFont(QFont("Palatino", 24))
+        regen_btn.clicked.connect(self.regenerate_chart)
+        regen_btn.setStyleSheet("background: #f5f5f5; color: #222; border-radius: 0; border: 1px solid #bbb; min-width: 60px; min-height: 60px; box-shadow: 0 2px 6px #ddd, 0 1.5px 0 #fff inset;")
+        btn_row.addWidget(regen_btn)
 
-window_width = 1300
-window_height = 900
-screen_width = root.winfo_screenwidth()
-screen_height = root.winfo_screenheight()
-x_coord = (screen_width // 2) - (window_width // 2)
-y_coord = (screen_height // 2) - (window_height // 2) - 50
-root.geometry(f"{window_width}x{window_height}+{x_coord}+{y_coord}")
+        left_panel.addLayout(btn_row)
 
-root.bind("<FocusIn>", lambda event: entry.focus_set())
+        self.output_label = QLabel()
+        self.output_label.setAlignment(Qt.AlignCenter)
+        self.output_label.setFont(QFont("Palatino", 34))
+        self.output_label.setFixedSize(500, 700)
+        self.output_label.setStyleSheet("background-color: #fff; color: #222; border: none; box-shadow: 0 2px 8px #eee, 0 1.5px 0 #fff inset;")
+        left_panel.addWidget(self.output_label)
 
-main_frame = tk.Frame(root)
-main_frame.pack(side=tk.LEFT, padx=10, pady=10)
+        main_layout.addLayout(left_panel)
 
-vcmd = (root.register(validate_input), '%P')
-entry = tk.Entry(main_frame, font=('Palatino', 24), validate="key", validatecommand=vcmd)
-entry.pack(pady=10)
-entry.bind('<Return>', on_submit)
+        # Right side (image)
+        self.image_label = QLabel()
+        self.image_label.setStyleSheet("background: #fff; border: none; box-shadow: 0 2px 8px #eee, 0 1.5px 0 #fff inset;")
+        main_layout.addWidget(self.image_label)
 
-def regenerate_chart():
-    global letter_positions, chart_path, photo
-    letter_positions, chart_path = generate_random_chart()
-    allowed_chars.clear()
-    allowed_chars.update(letter_positions.keys())
-    # Update the image
-    image = Image.open(chart_path)
-    orig_width, orig_height = image.size
-    image = image.resize((int(orig_width * 0.9), int(orig_height * 0.9)), Image.LANCZOS)
-    photo = ImageTk.PhotoImage(image)
-    image_label.configure(image=photo)
-    image_label.image = photo
-    output_var.set("")
-    entry.delete(0, tk.END)
+        self.update_image()
+        self.entry.setFocus()
 
-button_frame = tk.Frame(main_frame)
-button_frame.pack(pady=5)
+    # Updates the displayed image
+    def update_image(self):
+        image = Image.open(self.chart_path)
+        orig_width, orig_height = image.size
+        image = image.resize((int(orig_width * 0.9), int(orig_height * 0.9)), Image.LANCZOS)
+        image.save("chart_resized.png")
+        pixmap = QPixmap("chart_resized.png")
+        self.image_label.setPixmap(pixmap)
 
-submit_button = tk.Button(button_frame, text="🆗", command=on_submit, font=('Palatino', 24))
-submit_button.pack(side=tk.LEFT, padx=(0, 10))
+    # Regenerates the chart and updates the image
+    def regenerate_chart(self):
+        self.letter_positions, self.chart_path = generate_random_chart()
+        self.allowed_chars = set(self.letter_positions.keys())
+        self.update_image()
+        self.output_label.setText("")
+        self.entry.clear()
 
-regen_button = tk.Button(button_frame, text="🔄", command=regenerate_chart, font=('Palatino', 24))
-regen_button.pack(side=tk.LEFT)
+    def filter_norwegian_letters(self, text):
+        allowed = ''.join([c for c in text.upper() if c in self.letter_positions])
+        if text != allowed:
+            cursor_pos = self.entry.cursorPosition()
+            self.entry.blockSignals(True)
+            self.entry.setText(allowed)
+            self.entry.setCursorPosition(cursor_pos - (len(text) - len(allowed)))
+            self.entry.blockSignals(False)
 
-output_var = tk.StringVar()
-output_label = tk.Label(main_frame, textvariable=output_var, font=('Palatino', 34), width=14, height=20,
-                        justify="center", anchor="center", bg=root.cget("bg"))
-output_label.pack(pady=10)
-output_label.bind("<Button-1>", lambda e: root.clipboard_append(output_var.get()))
+    # Handles the submit action
+    def on_submit(self):
+        word = self.entry.text().upper()
+        if not word:
+            return
+        coords = [f"{self.letter_positions[c][0]}, {self.letter_positions[c][1]}" for c in word]
+        result = "\n".join(coords)
+        self.output_label.setText(result)
+        QApplication.clipboard().setText(result)
+        self.entry.clear()
 
-# Load and display generated chart
-image = Image.open(chart_path)
-orig_width, orig_height = image.size
-image = image.resize((int(orig_width * 0.9), int(orig_height * 0.9)), Image.LANCZOS)
-photo = ImageTk.PhotoImage(image)
-image_label = tk.Label(root, image=photo)
-image_label.image = photo
-image_label.pack(side=tk.RIGHT, padx=10, pady=10)
 
-root.mainloop()
-
-# Cleanup chart if needed (optional)
-# os.remove(chart_path)
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = DekartApp()
+    window.show()
+    sys.exit(app.exec())
