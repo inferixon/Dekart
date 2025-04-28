@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 FONT_NAME = 'Palatino Linotype'
-VERSION = '1.3.1'
+VERSION = '1.3.2'
 
 letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ")
 
@@ -145,13 +145,14 @@ class DekartApp(QMainWindow):
         self.spill_intro_layout = QVBoxLayout()
         self.spill_intro_widget.setLayout(self.spill_intro_layout)
         self.spill_intro_label = QLabel("Skriv inn ordet\nsom er kryptert i koordinatene.\nDu har 7 forsøk. Lykke til!")
-        self.spill_intro_label.setFont(QFont(FONT_NAME, 29))
-        self.spill_intro_label.setStyleSheet("color: #000;")
+        self.spill_intro_label.setFont(QFont(FONT_NAME, 54))
+        self.spill_intro_label.setStyleSheet("color: #000; line-height: 420%;")
         self.spill_intro_label.setAlignment(Qt.AlignCenter)
         self.spill_intro_layout.addStretch()
         self.spill_intro_layout.addWidget(self.spill_intro_label)
+        self.spill_intro_layout.addSpacing(50)
         self.spill_intro_start_btn = QPushButton("⭐️")
-        self.spill_intro_start_btn.setFont(QFont(FONT_NAME, 43))
+        self.spill_intro_start_btn.setFont(QFont(FONT_NAME, 40))
         self.spill_intro_start_btn.setStyleSheet("color: #000; background: #f5f5f5; border: 1px solid #bbb; min-width: 80px; min-height: 80px;")
         self.spill_intro_start_btn.clicked.connect(self.spill_start_game)
         self.spill_intro_start_btn.setDefault(True)
@@ -224,26 +225,19 @@ class DekartApp(QMainWindow):
         self.spill_results = []
         self.spill_total_rounds = 7
 
-        palatino_font_24 = QFont(FONT_NAME, 24)
-        palatino_font_22 = QFont(FONT_NAME, 22)
-        palatino_font_29 = QFont(FONT_NAME, 29)
-        palatino_font_32 = QFont(FONT_NAME, 32)
-        palatino_font_40 = QFont(FONT_NAME, 40)
-        palatino_font_12 = QFont(FONT_NAME, 12)
         # KodeGen tab
-        self.entry.setFont(palatino_font_24)
-        self.output_label.setFont(palatino_font_32)
-        submit_btn.setFont(palatino_font_24)
-        regen_btn.setFont(palatino_font_24)
-        self.image_label.setFont(palatino_font_12)
+        self.entry.setFont(QFont(FONT_NAME, 24))
+        self.output_label.setFont(QFont(FONT_NAME, 32))
+        submit_btn.setFont(QFont(FONT_NAME, 24))
+        regen_btn.setFont(QFont(FONT_NAME, 24))
+        self.image_label.setFont(QFont(FONT_NAME, 12))
         # KodeSpill tab
-        self.spill_result_label.setFont(palatino_font_32)
-        self.spill_task_label.setFont(palatino_font_32)
-        self.spill_entry.setFont(palatino_font_32)
-        self.spill_start_btn.setFont(palatino_font_22)
-        self.spill_image_label.setFont(palatino_font_12)
-        self.spill_intro_label.setFont(palatino_font_29)
-        self.spill_intro_start_btn.setFont(palatino_font_40)
+        self.spill_result_label.setFont(QFont(FONT_NAME, 32))
+        self.spill_task_label.setFont(QFont(FONT_NAME, 32))
+        self.spill_entry.setFont(QFont(FONT_NAME, 32))
+        self.spill_start_btn.setFont(QFont(FONT_NAME, 22))
+        self.spill_image_label.setFont(QFont(FONT_NAME, 12))
+        self.spill_intro_start_btn.setFont(QFont(FONT_NAME, 40))
 
         self.update_image()
         self.entry.setFocus()
